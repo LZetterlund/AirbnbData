@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Airbnb listings in Chicago</title>
+	<script src="https://d3js.org/d3.v4.min.js"></script>
+	<style type="text/css">
+
+		svg {
+			background-color: skyblue;
+		}
+           
+        h3 {
+            width: 800px;
+            text-align: center;
+        }
+        
+        p {
+            width: 40px;
+            height: 40px;
+            display: inline;  
+        }
+        
+        #legend0{
+            width: 40px;
+            height: 40px;
+            display: inline-block;
+            overflow: hidden;
+            border: 1px solid #000;
+            background-color: #ccc;
+        }
+        
+        #legend1{
+            width: 40px;
+            height: 40px;
+            display: inline-block;
+            overflow: hidden;
+            border: 1px solid #000;
+            background-color: #CCFFCC;
+        }
+        
+        #legend2{
+            width: 40px;
+            height: 40px;
+            display: inline-block;
+            overflow: hidden;
+            border: 1px solid #000;
+            background-color: #99E5A5;
+        }
+
+        #legend3{
+            width: 40px;
+            height: 40px;
+            display: inline-block;
+            overflow: hidden;
+            border: 1px solid #000;
+            background-color: #66CC7F;
+        }
+        
+        #legend4{
+            width: 40px;
+            height: 40px;
+            display: inline-block;
+            overflow: hidden;
+            border: 1px solid #000;
+            background-color: #33B259;
+        }
+        
+        #legend5{
+            width: 40px;
+            height: 40px;
+            display: inline-block;
+            overflow: hidden;
+            border: 1px solid #000;
+            background-color: #009933;
+        }
+
+
+	</style>
+</head>
+<body>
+    <h3>Airbnb listings in Chicago</h3>
+	<script type="text/javascript">
+
+
+
+
+		//Width and height
+		var w = 800;
+		var h = 550;
+
+		//Define map projection
+		var projection = d3.geoMercator()
+							   .center([ -87.6298, 41.8781])
+							   .translate([ w/2, h/2 ])
+							   .scale([ w * 150 ]);
+
+		//Define path generator
+		var path = d3.geoPath()
+						 .projection(projection);
+
+		//Define quantize scale to sort data values into buckets of color
+        //Colors by Cynthia Brewer (colorbrewer2.org), YlOrRd
+        var color = [ "#C70039", "#FF5733", "#FFC300", "#ACFF33", "#30A624" ];
+
+		//Create SVG
+		var svg = d3.select("body")
+					.append("svg")
+					.attr("width", w)
+					.attr("height", h);
+
+		//Load in CO2 data
+		d3.csv("data/listings.csv", function(data) {
+
+			//Load in GeoJSON data
+			d3.json("data/neighbourhoods.geojson", function(json) {
+				
+				//Merge the CO2 data and GeoJSON into a single array
+				//
+				//Loop through once for each CO2 data value
+				for (var i = 0; i < data.length; i++) {
+			
+					//Grab country name
+					var dataNBCode = data[i].neighbourhood;
+                    
+                    var dataY = data[i].latitude;
+                    var dataX = data[i].longitude;
+					
+					//Grab data value, and convert from string to float
+					var dataValue = +data[i].price;
+			
+					//Find the corresponding country inside the GeoJSON
+					for (var j = 0; j < json.features.length; j++) {
+					
+						//We'll check the official ISO country code
+						var jsonNBCode = json.features[j].properties.neighbourhood;
+			
+						if (dataNBCode == jsonNBCode) {
+					
+							//Copy the data value into the GeoJSON
+							//json.features[j].properties.users = dataValue;
+							
+							//Stop looking through the JSON
+							//break;
+							
+						}
+					}		
+				}
+
+				//Bind data and create one path per GeoJSON feature
+				svg.selectAll("path")
+				   .data(json.features)
+				   .enter()
+				   .append("path")
+				   .attr("d", path)
+				   .style("fill", function(d) {
+
+						//Get data value
+						//var value = d.properties.users;
+
+						//if (value) {
+							//If value exists…
+						//	return color(value);
+						//} else {
+							//If value is undefined…
+							return "#ccc";
+						//}
+
+					})
+                    .style("stroke", "#000");
+
+				//Load in cities data
+				d3.csv("data/listings.csv", function(data) {
+					
+					//Create a circle for each city
+					svg.selectAll("circle")
+					   .data(data)
+					   .enter()
+					   .append("circle")
+					   .attr("cx", function(d) {
+					   	   //[0] returns the first coordinate (x) of the projected value
+						   return projection([d.longitude, d.latitude])[0];
+					   })
+					   .attr("cy", function(d) {
+					   	   //[1] returns the second coordinate (y) of the projected value
+						   return projection([d.longitude, d.latitude])[1];
+					   })
+                        .attr("r", 2)
+					   .style("fill", function(d) {
+
+						//Get data value
+						var value = d.price;
+                        var mean = d3.mean(data, function(d){ return d.price });
+
+						if (value < mean) {
+							//If value exists…
+							return "#30A624";
+						} if (value > mean) {
+							//If value exists…
+							return "#C70039";
+						}else {
+							//If value is undefined…
+							return "#000";
+						}
+
+					});
+                });
+					
+
+			});  //End d3.json()
+
+		});  //End d3.csv()
+
+
+	
+	</script>
+</body>
