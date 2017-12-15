@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
 	<meta charset="utf-8">
-	<title>Airbnb listings in Chicago</title>
+	<title>Airbnb listings</title>
 	<script src="https://d3js.org/d3.v4.min.js"></script>
 	<style type="text/css">
 
 		svg {
 			background-color: skyblue;
+            display: block;
 		}
            
         h3 {
@@ -20,59 +21,11 @@
             height: 40px;
             display: inline;  
         }
-        
-        #legend0{
-            width: 40px;
-            height: 40px;
+        #citySelect {
             display: inline-block;
-            overflow: hidden;
-            border: 1px solid #000;
-            background-color: #ccc;
         }
-        
-        #legend1{
-            width: 40px;
-            height: 40px;
+        button {
             display: inline-block;
-            overflow: hidden;
-            border: 1px solid #000;
-            background-color: #CCFFCC;
-        }
-        
-        #legend2{
-            width: 40px;
-            height: 40px;
-            display: inline-block;
-            overflow: hidden;
-            border: 1px solid #000;
-            background-color: #99E5A5;
-        }
-
-        #legend3{
-            width: 40px;
-            height: 40px;
-            display: inline-block;
-            overflow: hidden;
-            border: 1px solid #000;
-            background-color: #66CC7F;
-        }
-        
-        #legend4{
-            width: 40px;
-            height: 40px;
-            display: inline-block;
-            overflow: hidden;
-            border: 1px solid #000;
-            background-color: #33B259;
-        }
-        
-        #legend5{
-            width: 40px;
-            height: 40px;
-            display: inline-block;
-            overflow: hidden;
-            border: 1px solid #000;
-            background-color: #009933;
         }
 
 
@@ -80,18 +33,33 @@
 </head>
 <body>
     <h3>Airbnb listings in Chicago</h3>
+    <form>Price:
+        <input id="price" type="text"/>
+    </form>
 	<script type="text/javascript">
 
-
-
+        
+        //inputted values
+        var priceInput = document.getElementById('price');
 
 		//Width and height
 		var w = 800;
 		var h = 550;
 
-		//Define map projection
+        var coords = {
+            chicago: [ -87.6298, 41.8781],
+            denver: [-104.9900, 39.7365],
+            portland: [-122.6765, 45.5231],
+            seattle: [-122.3321, 47.6062],
+        };
+        
+        function loadCity() {
+		//Load in CO2 data
+        var cityValue = document.getElementById("citySelect").value
+            
+            		//Define map projection
 		var projection = d3.geoMercator()
-							   .center([ -87.6298, 41.8781])
+							   .center(coords[cityValue])
 							   .translate([ w/2, h/2 ])
 							   .scale([ w * 150 ]);
 
@@ -104,16 +72,16 @@
         var color = [ "#C70039", "#FF5733", "#FFC300", "#ACFF33", "#30A624" ];
 
 		//Create SVG
+        d3.select("svg").remove();
+            
 		var svg = d3.select("body")
 					.append("svg")
 					.attr("width", w)
 					.attr("height", h);
-
-		//Load in CO2 data
-		d3.csv("data/listings.csv", function(data) {
+		d3.csv("data/"+ cityValue +"/listings.csv", function(data) {
 
 			//Load in GeoJSON data
-			d3.json("data/neighbourhoods.geojson", function(json) {
+			d3.json("data/"+ cityValue +"/neighbourhoods.geojson", function(json) {
 				
 				//Merge the CO2 data and GeoJSON into a single array
 				//
@@ -170,7 +138,7 @@
                     .style("stroke", "#000");
 
 				//Load in cities data
-				d3.csv("data/listings.csv", function(data) {
+				d3.csv("data/"+ cityValue +"/listings.csv", function(data) {
 					
 					//Create a circle for each city
 					svg.selectAll("circle")
@@ -191,11 +159,15 @@
 						//Get data value
 						var value = d.price;
                         var mean = d3.mean(data, function(d){ return d.price });
+                        var checkAgainst = mean;
+                        //use the user inputed price unless its NaN or first time loading
+                        if(priceInput.value > 0)
+                        {checkAgainst = priceInput.value;}
 
-						if (value < mean) {
+						if (value <= checkAgainst) {
 							//If value exists…
 							return "#30A624";
-						} if (value > mean) {
+						} if (value > checkAgainst) {
 							//If value exists…
 							return "#C70039";
 						}else {
@@ -210,8 +182,19 @@
 			});  //End d3.json()
 
 		});  //End d3.csv()
-
+        }
 
 	
 	</script>
+<form>
+    Select a City:
+    <select id="citySelect">
+        <option value="chicago">Chicago</option>
+        <option value="denver">Denver</option>
+        <option value="portland">Portland</option>
+        <option value="seattle">Seattle</option>
+    </select>
+    <button type="button" onclick="loadCity()">Select</button>
+</form>
+    <br />
 </body>
